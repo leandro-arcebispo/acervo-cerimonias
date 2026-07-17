@@ -88,22 +88,19 @@ code {
 }
 
 .brand-mark {
-  font-size: 1.5rem;
+  display: flex;
   color: var(--accent);
-  line-height: 1;
+}
+
+.brand-mark svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .brand-name {
   font-family: var(--serif);
   font-size: 1.35rem;
   font-weight: 600;
-}
-
-.brand-sub {
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 
 .nav {
