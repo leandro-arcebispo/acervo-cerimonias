@@ -10,7 +10,8 @@ export default function FolhaToolbar({
   cerimoniaId: number;
   children: React.ReactNode;
 }) {
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(1.3);
+  const [pretoEBranco, setPretoEBranco] = useState(false);
 
   return (
     <>
@@ -35,12 +36,23 @@ export default function FolhaToolbar({
               <option value={1.3}>Muito grande</option>
             </select>
           </label>
+          <label className="folha-font-control">
+            <input
+              type="checkbox"
+              checked={pretoEBranco}
+              onChange={(e) => setPretoEBranco(e.target.checked)}
+            />
+            <span>Versão de impressão preto e branco</span>
+          </label>
           <button className="btn btn-primary" onClick={() => window.print()}>
             Imprimir / PDF
           </button>
         </div>
       </div>
-      <div className="folha" style={{ "--folha-scale": scale } as CSSProperties}>
+      <div
+        className={`folha${pretoEBranco ? " folha-pb" : ""}`}
+        style={{ "--folha-scale": scale } as CSSProperties}
+      >
         {children}
       </div>
     </>

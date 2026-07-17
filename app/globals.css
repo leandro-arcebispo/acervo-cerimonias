@@ -748,6 +748,24 @@ code {
   padding: 2rem 2.25rem 2.5rem;
 }
 
+/* Versão preto e branco: mesmo layout, só troca a paleta de cores por
+   tons de cinza/preto (redefine os tokens usados dentro da folha). */
+.folha-pb {
+  --surface: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #666666;
+  --accent: #333333;
+  --accent-deep: #000000;
+  --line: #b3b3b3;
+  --line-soft: #dddddd;
+  --badge-bg: #e8e8e8;
+  --badge-border: #999999;
+  --badge-ink: #1a1a1a;
+  --tag-bg: #ececec;
+  --tag-ink: #333333;
+  color: var(--ink);
+}
+
 .folha-toolbar-actions {
   display: flex;
   align-items: center;
