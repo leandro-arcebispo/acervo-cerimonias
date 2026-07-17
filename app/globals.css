@@ -324,6 +324,10 @@ code {
   line-height: 1.25;
 }
 
+.link-musica:hover {
+  text-decoration: underline;
+}
+
 .song-meta {
   font-size: 0.78rem;
   color: var(--muted);

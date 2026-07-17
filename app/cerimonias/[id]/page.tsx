@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCerimoniaCompleta } from "@/lib/cerimonias";
 import FolhaToolbar from "@/components/FolhaToolbar";
@@ -25,7 +26,11 @@ export default async function CerimoniaDetalhePage({
 
   const indice = itens
     .filter((item) => item.tipo === "musica" && item.musicaNome)
-    .map((item) => ({ nome: item.musicaNome as string, numero: item.numero }))
+    .map((item) => ({
+      nome: item.musicaNome as string,
+      numero: item.numero,
+      musicaId: item.musicaId,
+    }))
     .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0));
 
   let momentoAtual: number | null | undefined = undefined;
@@ -55,7 +60,13 @@ export default async function CerimoniaDetalhePage({
           <ol className="folha-indice-lista">
             {indice.map((it, i) => (
               <li key={i} className="folha-indice-item">
-                <span className="nome">{it.nome}</span>
+                {it.musicaId ? (
+                  <Link href={`/musicas/${it.musicaId}`} className="nome link-musica">
+                    {it.nome}
+                  </Link>
+                ) : (
+                  <span className="nome">{it.nome}</span>
+                )}
                 <span className="leader" />
                 <span className="num">{it.numero}</span>
               </li>
@@ -96,7 +107,16 @@ export default async function CerimoniaDetalhePage({
                 <div className="folha-musica-bloco">
                   <div className="folha-musica-topo">
                     <span className="song-num">{item.numero}</span>
-                    <span className="song-name">{item.musicaNome}</span>
+                    {item.musicaId ? (
+                      <Link
+                        href={`/musicas/${item.musicaId}`}
+                        className="song-name link-musica"
+                      >
+                        {item.musicaNome}
+                      </Link>
+                    ) : (
+                      <span className="song-name">{item.musicaNome}</span>
+                    )}
                   </div>
                   {(item.cantorNomes.length > 0 ||
                     item.capotraste ||

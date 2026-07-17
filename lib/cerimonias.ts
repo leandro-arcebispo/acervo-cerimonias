@@ -137,6 +137,7 @@ export interface ItemCompleto {
   ordem: number;
   tipo: "musica" | "despacho" | "quebra";
   numero: number | null;
+  musicaId: number | null;
   musicaNome: string | null;
   isPercussao: number;
   isCoro: number;
@@ -203,7 +204,7 @@ export async function getCerimoniaCompleta(
       ),
       all<Omit<ItemCompleto, "cantorNomes"> & { cantorNomeLegado: string | null }>(
         `SELECT i.id, i.momento_id AS momentoId, i.ordem, i.tipo, i.numero,
-                m.nome AS musicaNome, m.is_percussao AS isPercussao,
+                i.musica_id AS musicaId, m.nome AS musicaNome, m.is_percussao AS isPercussao,
                 m.is_coro AS isCoro, m.is_violao AS isViolao, m.is_acapella AS isAcapella,
                 i.tom, i.capotraste, ig.nome AS cantorNomeLegado, i.marcador, m.letra
            FROM itens_cerimonia i
