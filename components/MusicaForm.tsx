@@ -65,6 +65,16 @@ export default function MusicaForm({
     setTags((s) => (s.includes(key) ? s.filter((x) => x !== key) : [...s, key]));
   }
 
+  /** Editando: volta pra onde a pessoa veio (ex.: preview da cerimônia).
+   *  Criando: não há "de onde veio", cai na listagem. */
+  function voltarOuLista() {
+    if (initial && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/musicas");
+    }
+  }
+
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     const n = nome.trim();
@@ -102,7 +112,7 @@ export default function MusicaForm({
       setErro(j.error || "Erro ao salvar.");
       return;
     }
-    router.push("/musicas");
+    voltarOuLista();
     router.refresh();
   }
 
@@ -241,11 +251,7 @@ export default function MusicaForm({
         <button className="btn btn-primary" disabled={busy}>
           {initial ? "Salvar" : "Criar música"}
         </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => router.push("/musicas")}
-        >
+        <button type="button" className="btn" onClick={voltarOuLista}>
           Cancelar
         </button>
         {initial && (
