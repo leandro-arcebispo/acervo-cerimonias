@@ -1001,7 +1001,7 @@ code {
   .folha {
     border: none;
     border-radius: 0;
-    padding: 0;
+    padding: 0.4rem 0.5rem;
   }
 
   .folha-header {
