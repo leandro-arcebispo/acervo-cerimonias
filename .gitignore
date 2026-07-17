@@ -1,0 +1,20 @@
+node_modules/
+.next/
+out/
+build/
+
+# Env
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Banco local (dev)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Misc
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
