@@ -23,7 +23,7 @@ interface Mapas {
   temaByNorm: Map<string, number>;
   integByNorm: Map<string, number>;
   musicaByNorm: Map<string, number>;
-  localDefault: number | null;
+  localDefault: string | null;
 }
 
 async function carregarMapas(): Promise<Mapas> {
@@ -33,15 +33,15 @@ async function carregarMapas(): Promise<Mapas> {
     all<{ id: number; nome_normalizado: string }>(
       "SELECT id, nome_normalizado FROM musicas"
     ),
-    get<{ id: number }>(
-      "SELECT id FROM locais ORDER BY is_default DESC, id LIMIT 1"
+    get<{ nome: string }>(
+      "SELECT nome FROM locais ORDER BY is_default DESC, id LIMIT 1"
     ),
   ]);
   return {
     temaByNorm: new Map(temas.map((t) => [normalizar(t.nome), t.id])),
     integByNorm: new Map(integ.map((i) => [normalizar(i.nome), i.id])),
     musicaByNorm: new Map(mus.map((m) => [m.nome_normalizado, m.id])),
-    localDefault: local?.id ?? null,
+    localDefault: local?.nome ?? null,
   };
 }
 
@@ -79,7 +79,7 @@ export interface Preview {
   arquivo: string;
   titulo: string;
   data: string | null;
-  localId: number | null;
+  local: string | null;
   temaIds: number[];
   partes: PreviewParte[];
   musicas: PreviewMusica[];
@@ -152,7 +152,7 @@ export async function preview(arquivo: string): Promise<Preview> {
     arquivo: c.arquivo,
     titulo: c.titulo,
     data: c.data,
-    localId: m.localDefault,
+    local: m.localDefault,
     temaIds: temaIdsCerimonia,
     partes,
     musicas,
@@ -199,8 +199,8 @@ export async function commit(p: Preview): Promise<CommitResult> {
   }
 
   const { lastId: cerimoniaId } = await run(
-    "INSERT INTO cerimonias (nome, data, local_id, created_at) VALUES (@nome, @data, @local, @ca)",
-    { nome: p.titulo, data: p.data, local: p.localId, ca: now }
+    "INSERT INTO cerimonias (nome, data, local, created_at) VALUES (@nome, @data, @local, @ca)",
+    { nome: p.titulo, data: p.data, local: p.local, ca: now }
   );
 
   for (const tid of p.temaIds) {

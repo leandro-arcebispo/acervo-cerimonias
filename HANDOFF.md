@@ -115,10 +115,13 @@ public/docs/         7 .docx de amostra do grupo
   timestamps. Tags booleanas: **is_percussao, is_coro, is_violao, is_acapella** (editadas
   como grupo "Tags" no `MusicaForm`).
 - **temas**, **integrantes** (+ `integrante_instrumentos`), **instrumentos** (enum),
-  **locais**.
+  **locais** (tabela legada, não usada mais pela cerimônia — ver abaixo).
 - Junções: **musica_temas**, **musica_tons** (tons manuais — tabela existe mas **ainda não
   é lida/escrita em lugar nenhum**, ficou reservada), **maestria_voz**, **musica_versoes**.
-- **cerimonias** (nome, data, local_id) + **cerimonia_temas**, **cerimonia_integrantes**,
+- **cerimonias** (nome, data, **local** — texto livre, coluna adicionada via
+  `migrarColunas()`; a antiga `local_id`/FK pra `locais` foi abandonada mas a coluna
+  continua na tabela, sem uso, com backfill automático pro texto na 1ª migração) +
+  **cerimonia_temas**, **cerimonia_integrantes**,
   **momentos** (+ **momento_temas** — só existem em cerimônias vindas do import; o
   builder monta lista plana e não os usa).
 - **itens_cerimonia**: sequência ordenada. `tipo` = `musica` | `despacho` | **`quebra`**
@@ -137,7 +140,8 @@ public/docs/         7 .docx de amostra do grupo
 
 - **Fase 0 — Fundação**: ✅ projeto, schema, seed, auth, deploy-ready, git local.
 - **Fase 1 — CRUD do acervo**: ✅ Músicas (busca na letra via `?q`, tags, tom_padrao),
-  Temas, Integrantes. Locais: adiado (só "Casa de Cura"; tratar no fluxo de cerimônia).
+  Temas, Integrantes. Locais: resolvido virando campo de texto livre na cerimônia (ver
+  modelo de dados) em vez de CRUD/FK dedicado.
 - **Fase 2 — Import .docx**: ✅ parser (`import-parser.ts`, validado nos 7 arquivos) +
   staging (`/import/[arquivo]`, `ImportStaging` — agora com checkbox de excluir item antes
   de importar, pré-desmarcado pra entradas sem nome) + commit (`import-service.ts`) que

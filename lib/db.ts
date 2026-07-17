@@ -92,6 +92,17 @@ async function migrarColunas(db: Client): Promise<void> {
       await db.execute(`ALTER TABLE musicas ADD COLUMN ${nome} ${tipo}`);
     }
   }
+
+  const rsCerimonias = await db.execute("PRAGMA table_info(cerimonias)");
+  const colunasCerimonias = new Set(rsCerimonias.rows.map((r) => String(r[1])));
+  if (!colunasCerimonias.has("local")) {
+    // "Local" virou campo de texto livre — antes era FK pra tabela locais.
+    await db.execute("ALTER TABLE cerimonias ADD COLUMN local TEXT");
+    await db.execute(
+      `UPDATE cerimonias SET local = (SELECT nome FROM locais WHERE id = cerimonias.local_id)
+        WHERE local_id IS NOT NULL`
+    );
+  }
 }
 
 const SCHEMA = `

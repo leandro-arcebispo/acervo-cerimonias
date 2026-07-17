@@ -30,7 +30,7 @@ interface Preview {
   arquivo: string;
   titulo: string;
   data: string | null;
-  localId: number | null;
+  local: string | null;
   temaIds: number[];
   partes: { titulo: string; temaIds: number[]; despacho: string | null }[];
   musicas: PreviewMusica[];

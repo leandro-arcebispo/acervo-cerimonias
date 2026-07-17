@@ -16,7 +16,7 @@ export async function PUT(
   await atualizarCerimonia(Number(id), {
     nome,
     data: body?.data || null,
-    localId: body?.localId ?? null,
+    local: typeof body?.local === "string" ? body.local.trim() || null : null,
     temaIds: Array.isArray(body?.temaIds) ? body.temaIds.map(Number) : [],
     integranteIds: Array.isArray(body?.integranteIds)
       ? body.integranteIds.map(Number)

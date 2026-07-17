@@ -13,12 +13,11 @@ interface CerimoniaRow {
 
 export default async function CerimoniasPage() {
   const cerimonias = await all<CerimoniaRow>(`
-    SELECT c.id, c.nome, c.data, l.nome AS local,
+    SELECT c.id, c.nome, c.data, c.local,
            (SELECT GROUP_CONCAT(t.nome, ' · ')
               FROM cerimonia_temas ct JOIN temas t ON t.id = ct.tema_id
              WHERE ct.cerimonia_id = c.id) AS temas
     FROM cerimonias c
-    LEFT JOIN locais l ON l.id = c.local_id
     ORDER BY c.data DESC
   `);
 

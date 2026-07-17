@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const cerimonias = await all(
-    "SELECT id, nome, data, local_id FROM cerimonias ORDER BY data DESC, id DESC"
+    "SELECT id, nome, data, local FROM cerimonias ORDER BY data DESC, id DESC"
   );
   return NextResponse.json(cerimonias);
 }
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const id = await criarCerimonia({
     nome,
     data: body?.data || null,
-    localId: body?.localId ?? null,
+    local: typeof body?.local === "string" ? body.local.trim() || null : null,
     temaIds: Array.isArray(body?.temaIds) ? body.temaIds.map(Number) : [],
     integranteIds: Array.isArray(body?.integranteIds)
       ? body.integranteIds.map(Number)

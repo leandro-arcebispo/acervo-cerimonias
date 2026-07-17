@@ -8,11 +8,6 @@ interface Opt {
   id: number;
   nome: string;
 }
-interface Local {
-  id: number;
-  nome: string;
-  isDefault: number;
-}
 interface Sugestao {
   id: number;
   nome: string;
@@ -43,13 +38,11 @@ interface PoolItem {
 export default function MontarCerimonia({
   temas,
   integrantes,
-  locais,
   cerimoniaId,
   initial,
 }: {
   temas: Opt[];
   integrantes: Opt[];
-  locais: Local[];
   cerimoniaId?: number;
   initial?: CerimoniaParaEditar;
 }) {
@@ -59,9 +52,7 @@ export default function MontarCerimonia({
 
   const [nome, setNome] = useState(initial?.nome ?? "");
   const [data, setData] = useState(initial?.data ?? "");
-  const [localId, setLocalId] = useState<number | null>(
-    initial?.localId ?? (locais.find((l) => l.isDefault)?.id ?? locais[0]?.id ?? null)
-  );
+  const [local, setLocal] = useState(initial?.local ?? "");
   const [temaIds, setTemaIds] = useState<number[]>(initial?.temaIds ?? []);
   const [presentes, setPresentes] = useState<number[]>(
     initial?.integranteIds ?? integrantes.map((i) => i.id)
@@ -186,7 +177,7 @@ export default function MontarCerimonia({
     const payload = {
       nome: nome.trim(),
       data: data || null,
-      localId,
+      local: local.trim() || null,
       temaIds,
       integranteIds: presentes,
       itens: (() => {
@@ -251,17 +242,12 @@ export default function MontarCerimonia({
           </div>
           <div style={{ flex: "1 1 130px" }}>
             <label className="lbl">Local</label>
-            <select
-              className="select"
-              value={localId ?? ""}
-              onChange={(e) => setLocalId(e.target.value ? Number(e.target.value) : null)}
-            >
-              {locais.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.nome}
-                </option>
-              ))}
-            </select>
+            <input
+              className="input"
+              value={local}
+              placeholder="Ex.: Casa de Cura"
+              onChange={(e) => setLocal(e.target.value)}
+            />
           </div>
         </div>
 

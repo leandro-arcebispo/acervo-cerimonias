@@ -1,19 +1,12 @@
 import Link from "next/link";
 import { listTemas } from "@/lib/temas";
 import { listIntegrantes } from "@/lib/integrantes";
-import { all } from "@/lib/db";
 import MontarCerimonia from "@/components/MontarCerimonia";
 
 export const dynamic = "force-dynamic";
 
 export default async function MontarPage() {
-  const [temas, integrantes, locais] = await Promise.all([
-    listTemas(),
-    listIntegrantes(),
-    all<{ id: number; nome: string; is_default: number }>(
-      "SELECT id, nome, is_default FROM locais ORDER BY is_default DESC, nome"
-    ),
-  ]);
+  const [temas, integrantes] = await Promise.all([listTemas(), listIntegrantes()]);
 
   return (
     <>
@@ -28,7 +21,6 @@ export default async function MontarPage() {
         integrantes={integrantes
           .filter((i) => i.ativo)
           .map((i) => ({ id: i.id, nome: i.nome }))}
-        locais={locais.map((l) => ({ id: l.id, nome: l.nome, isDefault: l.is_default }))}
       />
     </>
   );

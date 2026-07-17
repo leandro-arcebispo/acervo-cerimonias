@@ -12,7 +12,7 @@ export interface ItemMontagem {
 export interface CriarCerimoniaInput {
   nome: string;
   data: string | null;
-  localId: number | null;
+  local: string | null;
   temaIds: number[];
   integranteIds: number[];
   itens: ItemMontagem[];
@@ -83,8 +83,8 @@ async function salvarConteudo(cid: number, inp: CriarCerimoniaInput): Promise<vo
 /** Cria uma cerimônia montada (numeração automática das músicas). */
 export async function criarCerimonia(inp: CriarCerimoniaInput): Promise<number> {
   const { lastId: cid } = await run(
-    "INSERT INTO cerimonias (nome, data, local_id, created_at) VALUES (@n, @d, @l, @c)",
-    { n: inp.nome, d: inp.data, l: inp.localId, c: nowIso() }
+    "INSERT INTO cerimonias (nome, data, local, created_at) VALUES (@n, @d, @l, @c)",
+    { n: inp.nome, d: inp.data, l: inp.local, c: nowIso() }
   );
   await salvarConteudo(cid, inp);
   return cid;
@@ -101,8 +101,8 @@ export async function atualizarCerimonia(
   inp: CriarCerimoniaInput
 ): Promise<void> {
   await run(
-    "UPDATE cerimonias SET nome = @n, data = @d, local_id = @l WHERE id = @id",
-    { n: inp.nome, d: inp.data, l: inp.localId, id }
+    "UPDATE cerimonias SET nome = @n, data = @d, local = @l WHERE id = @id",
+    { n: inp.nome, d: inp.data, l: inp.local, id }
   );
   await run("DELETE FROM itens_cerimonia WHERE cerimonia_id = ?", [id]);
   await run(
@@ -174,9 +174,8 @@ export async function getCerimoniaCompleta(
   id: number
 ): Promise<CerimoniaCompleta | null> {
   const cerimonia = await get<CerimoniaHeader>(
-    `SELECT c.id, c.nome, c.data, c.observacoes, l.nome AS localNome
+    `SELECT c.id, c.nome, c.data, c.observacoes, c.local AS localNome
        FROM cerimonias c
-       LEFT JOIN locais l ON l.id = c.local_id
       WHERE c.id = ?`,
     [id]
   );
@@ -290,7 +289,7 @@ export interface CerimoniaParaEditar {
   id: number;
   nome: string;
   data: string;
-  localId: number | null;
+  local: string;
   temaIds: number[];
   integranteIds: number[];
   itens: ItemParaEditar[];
@@ -305,8 +304,8 @@ export async function getCerimoniaParaEditar(
     id: number;
     nome: string | null;
     data: string | null;
-    local_id: number | null;
-  }>("SELECT id, nome, data, local_id FROM cerimonias WHERE id = ?", [id]);
+    local: string | null;
+  }>("SELECT id, nome, data, local FROM cerimonias WHERE id = ?", [id]);
   if (!cerimonia) return null;
 
   const [temaRows, integranteRows, itensRows, poolRows] = await Promise.all([
@@ -361,7 +360,7 @@ export async function getCerimoniaParaEditar(
     id: cerimonia.id,
     nome: cerimonia.nome ?? "",
     data: cerimonia.data ?? "",
-    localId: cerimonia.local_id,
+    local: cerimonia.local ?? "",
     temaIds: temaRows.map((t) => t.tema_id),
     integranteIds: integranteRows.map((i) => i.integrante_id),
     itens: itensRows.map((r) =>

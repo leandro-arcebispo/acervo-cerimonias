@@ -53,7 +53,7 @@ export interface Cerimonia {
   id: number;
   nome: string | null;
   data: string | null;
-  local_id: number | null;
+  local: string | null;
   observacoes: string | null;
   created_at: string;
 }
