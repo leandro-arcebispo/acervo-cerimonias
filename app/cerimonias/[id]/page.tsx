@@ -96,15 +96,15 @@ export default async function CerimoniaDetalhePage({
                 <div className="folha-musica-bloco">
                   <div className="folha-musica-topo">
                     <span className="song-num">{item.numero}</span>
-                    <span className="song-name">
-                      {item.musicaNome}
-                      {item.isPercussao ? <span className="tag"> percussão</span> : null}
-                      {item.isCoro ? <span className="tag"> coro</span> : null}
-                      {item.isViolao ? <span className="tag"> violão</span> : null}
-                      {item.isAcapella ? <span className="tag"> acapella</span> : null}
-                    </span>
+                    <span className="song-name">{item.musicaNome}</span>
                   </div>
-                  {(item.cantorNomes.length > 0 || item.capotraste || item.tom) && (
+                  {(item.cantorNomes.length > 0 ||
+                    item.capotraste ||
+                    item.tom ||
+                    item.isPercussao ||
+                    item.isCoro ||
+                    item.isViolao ||
+                    item.isAcapella) && (
                     <div className="folha-musica-meta">
                       {item.cantorNomes.length > 0 && (
                         <span className="song-meta">{item.cantorNomes.join(", ")}</span>
@@ -112,7 +112,30 @@ export default async function CerimoniaDetalhePage({
                       {item.capotraste ? (
                         <span className="song-meta">capo {item.capotraste}</span>
                       ) : null}
-                      {item.tom && <span className="tom">{item.tom}</span>}
+                      <span className="tom-cluster">
+                        {item.isPercussao ? (
+                          <span className="percussao-icone" title="Só percussão">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <ellipse cx="12" cy="4.2" rx="6.3" ry="2" />
+                              <path d="M5.9 4.6 L8.3 19 L15.7 19 L18.1 4.6" />
+                              <ellipse cx="12" cy="19" rx="3.6" ry="1.2" />
+                              <path d="M7 5.6 L7 7.4 M10 6.5 L10 8.1 M14 6.5 L14 8.1 M17 5.6 L17 7.4" />
+                            </svg>
+                          </span>
+                        ) : null}
+                        {item.tom && <span className="tom">{item.tom}</span>}
+                        {item.isCoro ? <span className="tag">coro</span> : null}
+                        {item.isViolao ? <span className="tag">violão</span> : null}
+                        {item.isAcapella ? <span className="tag">acapella</span> : null}
+                      </span>
                     </div>
                   )}
                   {item.letra ? (

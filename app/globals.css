@@ -348,16 +348,46 @@ code {
 }
 
 .tom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 36px;
-  text-align: center;
+  height: 1.9em;
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--badge-ink);
   background: var(--badge-bg);
   border: 1px solid var(--badge-border);
   border-radius: 6px;
-  padding: 0.18rem 0.5rem;
+  padding: 0 0.5rem;
   flex: 0 0 auto;
+}
+
+.tom-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.percussao-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 1.9em;
+  font-size: 0.82rem;
+  color: var(--badge-ink);
+  background: var(--badge-bg);
+  border: 1px solid var(--badge-border);
+  border-radius: 6px;
+  padding: 0 0.5rem;
+  flex: 0 0 auto;
+}
+
+.percussao-icone svg {
+  width: 1.3em;
+  height: 1.3em;
 }
 
 /* ===== Lista genérica (temas/integrantes) ===== */
@@ -855,7 +885,8 @@ code {
 }
 
 .folha-musica-meta .song-meta,
-.folha-musica-meta .tom {
+.folha-musica-meta .tom,
+.folha-musica-meta .percussao-icone {
   font-size: calc(0.8rem * var(--folha-scale));
 }
 
@@ -995,6 +1026,7 @@ code {
      (artefato de anti-aliasing do motor de impressão) — retos ficam limpos. */
   .tag,
   .tom,
+  .percussao-icone,
   .despacho-item {
     border-radius: 0;
   }
