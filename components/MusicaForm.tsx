@@ -225,8 +225,11 @@ export default function MusicaForm({
           Acorde entre colchetes antes da sílaba: <code>[Am]Exu abre a [C]porta</code>.
           Pra progressão sem letra, pode juntar tudo num colchete só —{" "}
           <code>[Am C G Dm]</code> — ou nem usar colchete, só a linha de acordes direto:{" "}
-          <code>Am C G Dm</code>. Linha em branco separa estrofes. Opcional — a folha
-          usa isso só no modo &quot;Cifra&quot;; sem preencher, mostra a letra normal.
+          <code>Am C G Dm</code>. Numa linha só de acordes (sem letra nenhuma) o colchete
+          aparece de volta no resultado, já transposto — útil como separador entre
+          trechos, ex. <code>[Em Am D] [C B7]</code>. Linha em branco separa estrofes.
+          Opcional — a folha usa isso só no modo &quot;Cifra&quot;; sem preencher, mostra
+          a letra normal.
         </p>
         <textarea
           className="textarea"

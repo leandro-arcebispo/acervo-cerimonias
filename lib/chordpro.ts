@@ -13,6 +13,12 @@
 export interface ChordChunk {
   chord: string | null;
   text: string;
+  /** Marca se esse pedaço é o início/fim de um colchete original — usado só em
+   *  linhas de progressão pura (sem letra nenhuma), onde o colchete funciona como
+   *  separador visual e por isso é reproduzido no resultado (ver Cifra.tsx). Em
+   *  linha com letra de verdade o colchete continua invisível (padrão ChordPro). */
+  abreColchete?: boolean;
+  fechaColchete?: boolean;
 }
 
 export interface ChordProLine {
@@ -34,16 +40,23 @@ function ehLinhaSoAcordes(linha: string): boolean {
 }
 
 /** Empilha os acordes pendentes de um colchete: todos com texto vazio, exceto o
- *  último, que leva o texto que vier a seguir (fora do colchete). */
+ *  último, que leva o texto que vier a seguir (fora do colchete). Marca o primeiro
+ *  e o último pedaço do grupo (abre/fechaColchete) pra eventualmente reproduzir o
+ *  colchete original no resultado. */
 function flush(chunks: ChordChunk[], pendentes: string[], texto: string) {
   if (pendentes.length === 0) {
     if (texto) chunks.push({ chord: null, text: texto });
     return;
   }
-  for (let i = 0; i < pendentes.length - 1; i++) {
-    chunks.push({ chord: pendentes[i], text: "" });
+  for (let i = 0; i < pendentes.length; i++) {
+    const ultimo = i === pendentes.length - 1;
+    chunks.push({
+      chord: pendentes[i],
+      text: ultimo ? texto : "",
+      abreColchete: i === 0,
+      fechaColchete: ultimo,
+    });
   }
-  chunks.push({ chord: pendentes[pendentes.length - 1], text: texto });
 }
 
 /** Quebra uma linha em pedaços {acorde, texto-que-segue}. Linha sem colchetes vira 1 pedaço com chord=null,
@@ -134,7 +147,7 @@ export function transposeLines(
 ): ChordProLine[] {
   return linhas.map((linha) => ({
     chunks: linha.chunks.map((c) =>
-      c.chord ? { chord: transposeChord(c.chord, semitons, preferFlat), text: c.text } : c
+      c.chord ? { ...c, chord: transposeChord(c.chord, semitons, preferFlat) } : c
     ),
   }));
 }

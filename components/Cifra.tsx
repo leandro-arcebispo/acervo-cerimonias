@@ -48,18 +48,32 @@ export default function Cifra({
             </p>
           );
         }
-        const soProgressao = linha.chunks.every((c) => c.text.trim() === "");
+        // Progressão pura (sem letra nenhuma): o colchete original volta a aparecer
+        // no resultado — aqui ele é separador visual, não marcação invisível de
+        // "acorde colado na sílaba" (isso continua escondido no chordpro padrão).
+        // Ignora o texto de pedaços sem acorde (ex. um rótulo "Intro: " antes do
+        // colchete) — só importa se os acordes em si têm letra colada ou não.
+        const soProgressao = linha.chunks.every(
+          (c) => c.chord === null || c.text.trim() === ""
+        );
         return (
           <div
             key={i}
             className={`folha-cifra-linha${soProgressao ? " folha-cifra-linha-progressao" : ""}`}
           >
-            {linha.chunks.map((c, j) => (
-              <span key={j} className="folha-cifra-chunk">
-                <span className="folha-cifra-acorde">{c.chord ?? " "}</span>
-                <span className="folha-cifra-silaba">{c.text || " "}</span>
-              </span>
-            ))}
+            {linha.chunks.map((c, j) => {
+              let acorde = c.chord ?? " ";
+              if (soProgressao && c.chord) {
+                if (c.abreColchete) acorde = "[" + acorde;
+                if (c.fechaColchete) acorde = acorde + "]";
+              }
+              return (
+                <span key={j} className="folha-cifra-chunk">
+                  <span className="folha-cifra-acorde">{acorde}</span>
+                  <span className="folha-cifra-silaba">{c.text || " "}</span>
+                </span>
+              );
+            })}
           </div>
         );
       })}

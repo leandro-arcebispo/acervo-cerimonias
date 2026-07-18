@@ -358,3 +358,16 @@ chunk com texto de letra) ganha uma classe `.folha-cifra-linha-progressao` que d
 espaçamento fixo entre acordes (em vez de depender de quantos espaços foram digitados) e
 esconde a linha de sílaba fantasma. Testado ao vivo com "BESA ME MUCHO" (id 159, cifra
 bruta `Am Dm Bdim E7 Am`, sem colchete nenhum) — transpôs certo e revertido depois.
+
+**Ajuste seguinte (mesma sessão)**: usuário reportou que colchetes usados como separador
+não apareciam no resultado — o colchete era sempre consumido/invisível (padrão ChordPro
+de "acorde colado na sílaba"), o que apaga a moldura visual que ele usa pra separar
+trechos de progressão. Corrigido em `lib/chordpro.ts`/`components/Cifra.tsx`: `ChordChunk`
+ganhou `abreColchete`/`fechaColchete` marcando início/fim de cada colchete original; em
+linha detectada como "só progressão" (nenhum acorde tem letra colada — checagem ignora
+texto de pedaços sem acorde, tipo um rótulo "Intro: " antes do colchete, pra não falsear a
+detecção) o colchete original é reproduzido no resultado, já transposto, ao redor de cada
+grupo (`[Em7 Am7 D]` continua agrupado, mesmo transposto). Em linha com letra de verdade
+o colchete continua invisível (padrão chordpro). Testado ao vivo de novo com DANÇA DO
+ESPÍRITO (id 145), incluindo o caso de rótulo "Intro: [Em7] [Am7] ..." na mesma linha —
+revertido depois.
