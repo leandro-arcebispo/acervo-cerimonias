@@ -27,9 +27,9 @@ export interface ChordProLine {
 
 const CHORD_TOKEN = /\[([^\]]+)\]/g;
 
-/** Ex.: Em7, FM7, C7M, Bsus2, Bdim, F/G, Bb7M. Heurística, não precisa ser exaustiva. */
+/** Ex.: Em7, FM7, C7M, Bsus2, Bdim, F/G, Bb7M, A7(9-)/D. Heurística, não precisa ser exaustiva. */
 const CHORD_LIKE =
-  /^[A-G][#b]?(maj7|min7|dim7|sus2|sus4|add9|7M|M7|maj|min|dim|aug|m7|M|m|7|6|9|11|13|º)?(\/[A-G][#b]?)?$/;
+  /^[A-G][#b]?(maj7|min7|dim7|sus2|sus4|add9|7M|M7|maj|min|dim|aug|m7|M|m|7|6|9|11|13|º)?(\([^)]*\))?(\/[A-G][#b]?)?$/;
 
 /** ≥60% dos tokens da linha parecem acorde → trata a linha inteira como progressão. */
 function ehLinhaSoAcordes(linha: string): boolean {
@@ -37,6 +37,14 @@ function ehLinhaSoAcordes(linha: string): boolean {
   if (tokens.length === 0) return false;
   const acordes = tokens.filter((t) => CHORD_LIKE.test(t));
   return acordes.length / tokens.length >= 0.6;
+}
+
+/** Um colchete só "parece acorde" se todo o conteúdo dele for token(s) de acorde —
+ *  senão é tratado como rótulo de seção (ex. `[Intro]`, `[Primeira Parte]`) e vira
+ *  texto literal, colchetes inclusos, em vez de virar acorde fake. */
+function pareceColcheteDeAcorde(conteudo: string): boolean {
+  const tokens = conteudo.trim().split(/\s+/).filter(Boolean);
+  return tokens.length > 0 && tokens.every((t) => CHORD_LIKE.test(t));
 }
 
 /** Empilha os acordes pendentes de um colchete: todos com texto vazio, exceto o
@@ -73,15 +81,23 @@ function parseLinha(linha: string): ChordChunk[] {
   const chunks: ChordChunk[] = [];
   let cursor = 0;
   let pendentes: string[] = [];
+  let textoLiteral = "";
   CHORD_TOKEN.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = CHORD_TOKEN.exec(linha))) {
-    flush(chunks, pendentes, linha.slice(cursor, m.index));
-    const tokens = m[1].trim().split(/\s+/).filter(Boolean);
-    pendentes = tokens.length ? tokens : [m[1]];
+    const textoAntes = linha.slice(cursor, m.index);
+    if (pareceColcheteDeAcorde(m[1])) {
+      flush(chunks, pendentes, textoLiteral + textoAntes);
+      textoLiteral = "";
+      const tokens = m[1].trim().split(/\s+/).filter(Boolean);
+      pendentes = tokens;
+    } else {
+      // Não parece acorde (ex. rótulo de seção) — mantém como texto literal, colchetes inclusos.
+      textoLiteral += textoAntes + m[0];
+    }
     cursor = CHORD_TOKEN.lastIndex;
   }
-  flush(chunks, pendentes, linha.slice(cursor));
+  flush(chunks, pendentes, textoLiteral + linha.slice(cursor));
   return chunks;
 }
 
