@@ -13,6 +13,7 @@ export default function FolhaToolbar({
   const [scale, setScale] = useState(1.3);
   const [pretoEBranco, setPretoEBranco] = useState(false);
   const [modoCifra, setModoCifra] = useState(false);
+  const [colunas, setColunas] = useState(2);
 
   return (
     <>
@@ -53,6 +54,17 @@ export default function FolhaToolbar({
             />
             <span>Ver cifra (acordes)</span>
           </label>
+          <label className="folha-font-control">
+            <span>Colunas</span>
+            <select
+              className="select"
+              value={colunas}
+              onChange={(e) => setColunas(Number(e.target.value))}
+            >
+              <option value={2}>2 colunas</option>
+              <option value={1}>1 coluna</option>
+            </select>
+          </label>
           <button className="btn btn-primary" onClick={() => window.print()}>
             Imprimir / PDF
           </button>
@@ -60,7 +72,7 @@ export default function FolhaToolbar({
       </div>
       <div
         className={`folha${pretoEBranco ? " folha-pb" : ""}${modoCifra ? " folha-modo-cifra" : ""}`}
-        style={{ "--folha-scale": scale } as CSSProperties}
+        style={{ "--folha-scale": scale, "--folha-colunas": colunas } as CSSProperties}
       >
         {children}
       </div>

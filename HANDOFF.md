@@ -224,8 +224,10 @@ public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionad
   `tom` do item, escolhendo grafia sustenido/bemol pelo tom de destino);
   `components/Cifra.tsx` renderiza acorde-em-cima-da-sílaba; toggle "Ver cifra (acordes)"
   no `FolhaToolbar` (mesmo mecanismo do toggle P&B — os dois blocos sempre existem no DOM,
-  CSS decide qual mostra, ver `.folha-so-letra`/`.folha-so-cifra` em `globals.css`); modo
-  Cifra vira 1 coluna só (`.folha.folha-modo-cifra .folha-lista { column-count: 1 }`);
+  CSS decide qual mostra, ver `.folha-so-letra`/`.folha-so-cifra` em `globals.css`);
+  número de colunas é um toggle independente ("Colunas": 1/2 no `FolhaToolbar`, default
+  **2** pra não alterar o visual já homologado de Letra) — não é mais amarrado ao modo
+  Cifra, ver `.folha-lista { column-count: var(--folha-colunas, 2) }`;
   música sem `chordpro` cai pra letra normal + aviso inline "(sem cifra cadastrada)"
   quando o modo Cifra está ativo. Linhas sem nenhum acorde renderizam como texto corrido
   normal (sem a estrutura de chunk), evitando overflow de chunks muito longos.
@@ -240,6 +242,10 @@ public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionad
 
 - Seed: 8 instrumentos, 22 temas, 1 local (Casa de Cura), integrantes (o usuário editou
   via CRUD — ex.: Stéfanie, Vini, Ju Gomes, Leandro). Confirmar via app, não pelo SEED.md.
+- **"La Llorona" (música id 135, da cerimônia CIGANA) já tem `chordpro` real preenchido** —
+  primeira música com cifra de verdade no acervo, convertida nesta sessão a partir de uma
+  cifra CifraClub que o usuário colou (formato acorde-em-cima-da-letra), com
+  `tom_padrao: "Dm"`. Ver "Fase 5 — ajustes seguintes" acima pros detalhes da conversão.
 - Importadas: Roda de Caboclo, Sete Linhas, Medicinas Sagradas, Cigana, Feminino em Nós,
   Oriental. **Atenção:** há registros de teste na lista de cerimônias
   (`_TEST_Cerimonia1`/afins, ids ~10-11) criados durante sessões de teste do usuário — uma
@@ -306,9 +312,10 @@ usuário antes de codar:
   quebrar a página).
 - **Layout "com cifra"**: acorde alinhado em cima da sílaba (padrão ChordPro clássico),
   não inline entre colchetes na versão renderizada (colchetes são só a sintaxe de
-  autoria). No modo Cifra, a folha vira **1 coluna só** (`column-count` desligado em
-  `.folha-lista`/`.folha-indice-lista`) — cifra ocupa mais altura por linha que letra
-  simples, não cabe bem em 2 colunas.
+  autoria). Decisão original desta sessão era forçar 1 coluna no modo Cifra (cifra ocupa
+  mais altura por linha, não cabe bem em 2 colunas) — **substituída depois** por pedido do
+  usuário: o número de colunas virou um toggle independente do Letra/Cifra (ver "Fase 5 —
+  ajustes seguintes" abaixo), default 2 pra não alterar o visual já homologado.
 - **Import**: parser (`import-parser.ts`) **não** tenta extrair cifra automaticamente dos
   `.docx` com acordes esparsos (ex. "La Llorona") — decisão consciente, mesmo padrão já
   usado pras tags Coro/Acapella. Cifra entra só via edição manual.
@@ -338,7 +345,8 @@ usuário antes de codar:
    fetch). `lib/cerimonias.ts` passou a trazer `m.chordpro`/`m.tom_padrao AS tomPadrao`
    nas queries de `itens` e `pool` (`ItemCompleto`/`PoolItem`).
 7. `globals.css`: classes `.folha-cifra-*`, `.folha-so-letra`/`.folha-so-cifra`,
-   `.folha-cifra-aviso-inline`; `.folha.folha-modo-cifra .folha-lista { column-count: 1 }`.
+   `.folha-cifra-aviso-inline`; `.folha.folha-modo-cifra .folha-lista { column-count: 1 }`
+   (**substituído depois** por um toggle independente, ver ajuste mais abaixo).
 
 Testado ao vivo no dev server (porta 6008): editei uma música real (DANÇA DO ESPÍRITO,
 id 145) com cifra + `tom_padrao`, setei um tom diferente no item da cerimônia CIGANA
@@ -371,3 +379,22 @@ grupo (`[Em7 Am7 D]` continua agrupado, mesmo transposto). Em linha com letra de
 o colchete continua invisível (padrão chordpro). Testado ao vivo de novo com DANÇA DO
 ESPÍRITO (id 145), incluindo o caso de rótulo "Intro: [Em7] [Am7] ..." na mesma linha —
 revertido depois.
+
+**Ajuste seguinte (mesma sessão)**: usuário converteu uma cifra real (La Llorona, formato
+CifraClub com acorde-em-cima-da-letra) pro nosso ChordPro — isso expôs que rótulo de seção
+tipo `[Intro]`/`[Primeira Parte]` virava acorde fake (parser tratava qualquer colchete como
+acorde). Corrigido: `CHORD_LIKE` ampliado pra aceitar extensão entre parênteses (ex.
+`A7(9-)/D`), e cada colchete agora é checado individualmente (`pareceColcheteDeAcorde`) —
+só vira acorde se TODO o conteúdo parecer acorde de verdade; senão fica como texto literal,
+colchetes inclusos. Resultado salvo de verdade em "La Llorona" (id 135):
+`chordpro` com a cifra convertida + `tom_padrao: "Dm"`.
+
+**Ajuste seguinte (mesma sessão)**: usuário pediu que o número de colunas não fique preso
+ao modo Cifra (era forçado 1 coluna) — quis um toggle independente que funcione pros dois
+modos, **sem alterar o visual de Letra em 2 colunas já homologado**. Implementado:
+`FolhaToolbar` ganhou o controle "Colunas" (select 1/2, default **2**, mesmo padrão do
+"Fonte"), setando `--folha-colunas` inline junto com `--folha-scale`; `globals.css` mudou
+`.folha-lista` pra `column-count: var(--folha-colunas, 2)` (fallback `2` = idêntico ao
+valor fixo de antes) e a regra que forçava 1 coluna no modo Cifra foi removida. Testado ao
+vivo: Letra no padrão continua 2 colunas; toggle "Colunas" muda em ambos os modos e
+persiste ao trocar entre Letra/Cifra.
