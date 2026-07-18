@@ -216,8 +216,24 @@ public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionad
   default "Muito grande". `FolhaToolbar` dá: Voltar, Editar (leva pro builder
   pré-preenchido), seletor de tamanho de fonte, toggle P&B, Imprimir/PDF (`window.print()`).
   Ver gotchas de print acima — já resolvidos, não regredir.
-- **Fase 5 — Cifra/ChordPro + transposição**: ⬜ PRÓXIMA. Planejamento já revisado com o
-  usuário nesta sessão (ver seção abaixo) — nada implementado ainda.
+- **Fase 5 — Cifra/ChordPro + transposição**: ✅ implementado e testado ao vivo nesta
+  sessão (dev server porta 6008). `musicas.chordpro` gravável via `MusicaForm` (textarea
+  "Cifra (ChordPro)", separado da Letra); `lib/chordpro.ts` faz parse (`parseChordPro`,
+  linha por linha, `[Acorde]texto` ou linha só-de-acordes) e transposição
+  (`transposeChord`/`transposeLines`/`semitonesEntre`, semitons entre `tom_padrao` e o
+  `tom` do item, escolhendo grafia sustenido/bemol pelo tom de destino);
+  `components/Cifra.tsx` renderiza acorde-em-cima-da-sílaba; toggle "Ver cifra (acordes)"
+  no `FolhaToolbar` (mesmo mecanismo do toggle P&B — os dois blocos sempre existem no DOM,
+  CSS decide qual mostra, ver `.folha-so-letra`/`.folha-so-cifra` em `globals.css`); modo
+  Cifra vira 1 coluna só (`.folha.folha-modo-cifra .folha-lista { column-count: 1 }`);
+  música sem `chordpro` cai pra letra normal + aviso inline "(sem cifra cadastrada)"
+  quando o modo Cifra está ativo. Linhas sem nenhum acorde renderizam como texto corrido
+  normal (sem a estrutura de chunk), evitando overflow de chunks muito longos.
+  **Limitação conhecida, aceita por ora**: numa linha mista (acorde + letra), um trecho
+  de texto muito longo entre dois acordes vira um único bloco que não quebra internamente
+  — pode estourar a largura da coluna em casos raros (verso longo sem acorde no meio).
+  Não migramos as 193 músicas existentes (decisão consciente, ver abaixo) — `chordpro`
+  fica vazio até edição manual.
 - **Fase 6 — Áudio (Drive/transcode) + PWA offline**: ⬜.
 
 ## Estado atual dos dados
@@ -266,21 +282,79 @@ public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionad
   banco Turso e o GitHub já estão prontos, ver "Stack & como rodar" e o `README.md`).
 - Os 2 PDFs soltos em `public/docs/` (ver "Estado atual dos dados") precisam de decisão.
 
-## PRÓXIMO — Fase 5: Cifra/ChordPro + transposição
+## Fase 5: Cifra/ChordPro + transposição — ✅ implementada (sessão 2026-07-18)
 
-Planejamento revisado com o usuário nesta sessão (sem código ainda):
+Planejada e codada na mesma sessão (2026-07-18). `chordpro` NÃO substitui `letra` — os
+dois campos coexistem, independentes; a folha ganha um toggle "Ver cifra (acordes)"
+(mesmo padrão do toggle P&B já existente no `FolhaToolbar`). Decisões fechadas com o
+usuário antes de codar:
 
-- **Objetivo**: `musicas.chordpro` (hoje reservado, nunca usado) passa a ser a fonte única
-  de letra+cifra (formato ChordPro, ex. `[Am]Exu abre a [C]porta`), substituindo `letra`
-  como fonte de verdade. As duas variantes da folha (só letra / letra+cifra) passam a ser
-  **geradas** do mesmo campo, em vez de mantidas separadas.
-- **Transposição automática**: hoje `tom` no item da cerimônia é só texto livre, sem
-  ligação com a cifra. A ideia é, ao definir o tom no builder, transpor os acordes do
-  ChordPro automaticamente pro tom escolhido.
-- **Decisões ainda abertas** (não fechadas):
-  - Como migrar as 193 músicas já cadastradas (a maioria só com `letra` texto puro, sem
-    cifra nenhuma) pro formato ChordPro.
-  - Layout da variante "com cifra" na folha impressa (hoje só existe a variante letra
-    simples).
-  - Se/como o parser de import deveria tentar extrair cifra automaticamente dos `.docx`
-    que têm acordes esparsos no meio da letra (ex. "La Llorona").
+- **Migração**: nenhuma migração em lote das 193 músicas existentes. `chordpro` fica
+  opcional; enquanto vazio, o modo Cifra da folha cai pra letra normal (com aviso discreto
+  "sem cifra cadastrada"). Preenchimento manual, música por música, começando pelas mais
+  tocadas.
+- **Formato de autoria**: ChordPro inline padrão, `[Am]Exu abre a [C]porta`. Precisa
+  suportar também **linha só de acordes, sem letra nenhuma** (ex. `[Am] [C] [G] [Dm]`) —
+  caso da progressão pura, sem texto — já que nem toda música precisa mostrar letra
+  completa pro instrumentista, às vezes só a harmonia basta.
+- **Tom de referência p/ transposição**: reaproveita `musicas.tom_padrao` (já existe,
+  hoje é só fallback de tom em `montagem.ts`) como o tom em que o `chordpro` foi escrito.
+  Ao trocar o `tom` do item na cerimônia, transpõe os acordes por semitons de diferença
+  entre `tom_padrao` e o `tom` escolhido. **Risco conhecido**: `tom`/`tom_padrao` são
+  campos de texto livre hoje (sem validação) — o parser de tom pro transpositor precisa
+  tolerar entrada não reconhecida (fallback: mostrar cifra sem transpor + aviso, não
+  quebrar a página).
+- **Layout "com cifra"**: acorde alinhado em cima da sílaba (padrão ChordPro clássico),
+  não inline entre colchetes na versão renderizada (colchetes são só a sintaxe de
+  autoria). No modo Cifra, a folha vira **1 coluna só** (`column-count` desligado em
+  `.folha-lista`/`.folha-indice-lista`) — cifra ocupa mais altura por linha que letra
+  simples, não cabe bem em 2 colunas.
+- **Import**: parser (`import-parser.ts`) **não** tenta extrair cifra automaticamente dos
+  `.docx` com acordes esparsos (ex. "La Llorona") — decisão consciente, mesmo padrão já
+  usado pras tags Coro/Acapella. Cifra entra só via edição manual.
+
+### O que foi implementado
+
+1. `lib/musicas.ts`: `chordpro` em `MusicaInput`, `COLS`, INSERT de `createMusica` e
+   `updateMusica` (era coluna órfã no schema — existia em `SCHEMA`, nunca lida/escrita).
+   Rotas `app/api/musicas/route.ts` (POST) e `[id]/route.ts` (PATCH) também repassam
+   `chordpro` do body.
+2. `components/MusicaForm.tsx`: textarea "Cifra (ChordPro)", separado da Letra, com help
+   text inline da sintaxe (`.form-help`/`.form-help code`, novo em `globals.css`).
+3. `lib/chordpro.ts` (novo): `parseChordPro` (texto → `ChordProLine[]`, cada linha uma
+   lista de `{chord, text}`; linha em branco vira separador de estrofe),
+   `transposeChord`/`transposeLines` (desloca a tônica/baixo por N semitons, escolhe
+   grafia sustenido/bemol pelo tom de destino via `preferFlatSpelling`), `parseTomRoot` +
+   `semitonesEntre` (extrai a tônica de um texto livre de tom e calcula a diferença).
+4. `components/Cifra.tsx` (novo): renderiza as `ChordProLine[]` já transpostas —
+   acorde-em-cima-da-sílaba pra linhas com acorde (`.folha-cifra-chunk`), texto corrido
+   normal pra linhas sem nenhum acorde (evita chunk atômico gigante que não quebraria
+   linha), aviso se o tom não foi reconhecido pro transpositor.
+5. `FolhaToolbar`: novo toggle "Ver cifra (acordes)" (mesmo mecanismo do toggle P&B —
+   classe `folha-modo-cifra` em `.folha`).
+6. `app/cerimonias/[id]/page.tsx`: componente local `LetraOuCifra` decide o que renderizar
+   por item/pool — sempre renderiza os dois blocos (`.folha-so-letra`/`.folha-so-cifra`),
+   CSS que mostra um ou outro conforme o toggle (igual ao `.folha-pb`, sem duplicar
+   fetch). `lib/cerimonias.ts` passou a trazer `m.chordpro`/`m.tom_padrao AS tomPadrao`
+   nas queries de `itens` e `pool` (`ItemCompleto`/`PoolItem`).
+7. `globals.css`: classes `.folha-cifra-*`, `.folha-so-letra`/`.folha-so-cifra`,
+   `.folha-cifra-aviso-inline`; `.folha.folha-modo-cifra .folha-lista { column-count: 1 }`.
+
+Testado ao vivo no dev server (porta 6008): editei uma música real (DANÇA DO ESPÍRITO,
+id 145) com cifra + `tom_padrao`, setei um tom diferente no item da cerimônia CIGANA
+(id 7), conferi a transposição certa (ex. `Em7`→`Gm7` subindo 3 semitons) e o fallback
+pra música sem cifra — depois **revertido** (`chordpro`/`tom_padrao` de volta a `null`,
+tom do item de volta a vazio) pra não deixar dado fictício no acervo real.
+
+**Ajuste seguinte na mesma sessão**: o usuário notou que a cifra bruta real do grupo
+(arquivos importados) não segue o padrão "1 acorde = 1 colchete" — é comum um colchete só
+com vários acordes (`[Em7 Am7 D Am7 B7 Em]`) ou nem colchete nenhum, só a linha de acordes
+solta (`Am Dm Bdim E7 Am`). Pra não forçar reescrever tudo nessa sintaxe estrita,
+`lib/chordpro.ts` agora aceita as 3 formas (1 acorde/colchete, vários acordes num colchete
+só, ou linha inteira sem colchete detectada por heurística — reaproveita a mesma ideia de
+`ehLinhaAcordes` do `import-parser.ts`, ≥60% dos tokens parecendo acorde) — todas viram
+acordes individuais, cada um transponível. Linha detectada como "só progressão" (nenhum
+chunk com texto de letra) ganha uma classe `.folha-cifra-linha-progressao` que dá um
+espaçamento fixo entre acordes (em vez de depender de quantos espaços foram digitados) e
+esconde a linha de sílaba fantasma. Testado ao vivo com "BESA ME MUCHO" (id 159, cifra
+bruta `Am Dm Bdim E7 Am`, sem colchete nenhum) — transpôs certo e revertido depois.

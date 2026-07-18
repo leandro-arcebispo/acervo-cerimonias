@@ -28,6 +28,7 @@ export interface MusicaInput {
   is_acapella?: number;
   status?: MusicaStatus;
   letra?: string | null;
+  chordpro?: string | null;
   cantor_habitual_id?: number | null;
   tom_padrao?: string | null;
   observacoes?: string | null;
@@ -83,11 +84,11 @@ export async function createMusica(input: MusicaInput): Promise<MusicaFull> {
   const { lastId } = await run(
     `INSERT INTO musicas
        (nome, nome_normalizado, autor_compositor, is_percussao, is_coro, is_violao,
-        is_acapella, status, letra, cantor_habitual_id, tom_padrao, observacoes,
+        is_acapella, status, letra, chordpro, cantor_habitual_id, tom_padrao, observacoes,
         created_at, updated_at)
      VALUES
        (@nome, @nome_normalizado, @autor, @perc, @coro, @violao,
-        @acapella, @status, @letra, @cantor, @tom, @obs, @ca, @ua)`,
+        @acapella, @status, @letra, @chordpro, @cantor, @tom, @obs, @ca, @ua)`,
     {
       nome: input.nome,
       nome_normalizado: normalizar(input.nome),
@@ -98,6 +99,7 @@ export async function createMusica(input: MusicaInput): Promise<MusicaFull> {
       acapella: input.is_acapella ?? 0,
       status: input.status ?? "consolidada",
       letra: input.letra ?? null,
+      chordpro: input.chordpro ?? null,
       cantor: input.cantor_habitual_id ?? null,
       tom: input.tom_padrao ?? null,
       obs: input.observacoes ?? null,
@@ -118,6 +120,7 @@ const COLS: Record<string, string> = {
   is_acapella: "is_acapella",
   status: "status",
   letra: "letra",
+  chordpro: "chordpro",
   cantor_habitual_id: "cantor_habitual_id",
   tom_padrao: "tom_padrao",
   observacoes: "observacoes",

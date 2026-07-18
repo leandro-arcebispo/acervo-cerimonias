@@ -2,8 +2,46 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCerimoniaCompleta } from "@/lib/cerimonias";
 import FolhaToolbar from "@/components/FolhaToolbar";
+import Cifra from "@/components/Cifra";
 
 export const dynamic = "force-dynamic";
+
+function LetraOuCifra({
+  letra,
+  chordpro,
+  tom,
+  tomPadrao,
+}: {
+  letra: string | null;
+  chordpro: string | null;
+  tom: string | null;
+  tomPadrao: string | null;
+}) {
+  if (chordpro) {
+    return (
+      <>
+        <pre className="folha-letra folha-so-letra">{letra}</pre>
+        <div className="folha-so-cifra">
+          <Cifra chordpro={chordpro} tomBase={tomPadrao} tomDestino={tom} />
+        </div>
+      </>
+    );
+  }
+  if (letra) {
+    return (
+      <pre className="folha-letra">
+        {letra}
+        <span className="folha-cifra-aviso-inline"> (sem cifra cadastrada)</span>
+      </pre>
+    );
+  }
+  return (
+    <p className="folha-letra-vazia">
+      sem letra cadastrada
+      <span className="folha-cifra-aviso-inline"> · sem cifra cadastrada</span>
+    </p>
+  );
+}
 
 function formatarData(iso: string | null): string | null {
   if (!iso) return null;
@@ -158,11 +196,12 @@ export default async function CerimoniaDetalhePage({
                       </span>
                     </div>
                   )}
-                  {item.letra ? (
-                    <pre className="folha-letra">{item.letra}</pre>
-                  ) : (
-                    <p className="folha-letra-vazia">sem letra cadastrada</p>
-                  )}
+                  <LetraOuCifra
+                    letra={item.letra}
+                    chordpro={item.chordpro}
+                    tom={item.tom}
+                    tomPadrao={item.tomPadrao}
+                  />
                 </div>
               )}
             </li>
@@ -184,11 +223,12 @@ export default async function CerimoniaDetalhePage({
                     <span className="tom">{p.tom}</span>
                   </div>
                 )}
-                {p.letra ? (
-                  <pre className="folha-letra">{p.letra}</pre>
-                ) : (
-                  <p className="folha-letra-vazia">sem letra cadastrada</p>
-                )}
+                <LetraOuCifra
+                  letra={p.letra}
+                  chordpro={p.chordpro}
+                  tom={p.tom}
+                  tomPadrao={p.tomPadrao}
+                />
               </li>
             ))}
           </ol>

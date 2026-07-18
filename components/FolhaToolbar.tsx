@@ -12,6 +12,7 @@ export default function FolhaToolbar({
 }) {
   const [scale, setScale] = useState(1.3);
   const [pretoEBranco, setPretoEBranco] = useState(false);
+  const [modoCifra, setModoCifra] = useState(false);
 
   return (
     <>
@@ -44,13 +45,21 @@ export default function FolhaToolbar({
             />
             <span>Versão de impressão preto e branco</span>
           </label>
+          <label className="folha-font-control">
+            <input
+              type="checkbox"
+              checked={modoCifra}
+              onChange={(e) => setModoCifra(e.target.checked)}
+            />
+            <span>Ver cifra (acordes)</span>
+          </label>
           <button className="btn btn-primary" onClick={() => window.print()}>
             Imprimir / PDF
           </button>
         </div>
       </div>
       <div
-        className={`folha${pretoEBranco ? " folha-pb" : ""}`}
+        className={`folha${pretoEBranco ? " folha-pb" : ""}${modoCifra ? " folha-modo-cifra" : ""}`}
         style={{ "--folha-scale": scale } as CSSProperties}
       >
         {children}

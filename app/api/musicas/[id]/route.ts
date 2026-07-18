@@ -30,6 +30,7 @@ export async function PATCH(
   if (body && "is_acapella" in body) patch.is_acapella = body.is_acapella ? 1 : 0;
   if (STATUS.includes(body?.status)) patch.status = body.status;
   if (body && "letra" in body) patch.letra = body.letra ?? null;
+  if (body && "chordpro" in body) patch.chordpro = body.chordpro ?? null;
   if (body && "tom_padrao" in body)
     patch.tom_padrao = body.tom_padrao?.trim() || null;
   if (body && "observacoes" in body) patch.observacoes = body.observacoes ?? null;

@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     is_acapella: body?.is_acapella ? 1 : 0,
     status,
     letra: body?.letra ?? null,
+    chordpro: body?.chordpro ?? null,
     cantor_habitual_id: parseCantor(body?.cantor_habitual_id),
     tom_padrao: body?.tom_padrao?.trim() || null,
     observacoes: body?.observacoes ?? null,

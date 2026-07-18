@@ -148,6 +148,8 @@ export interface ItemCompleto {
   cantorNomes: string[];
   marcador: string | null;
   letra: string | null;
+  chordpro: string | null;
+  tomPadrao: string | null;
 }
 
 export interface IntegranteCerimonia {
@@ -159,6 +161,8 @@ export interface PoolItem {
   musicaNome: string;
   tom: string | null;
   letra: string | null;
+  chordpro: string | null;
+  tomPadrao: string | null;
 }
 
 export interface CerimoniaCompleta {
@@ -206,7 +210,8 @@ export async function getCerimoniaCompleta(
         `SELECT i.id, i.momento_id AS momentoId, i.ordem, i.tipo, i.numero,
                 i.musica_id AS musicaId, m.nome AS musicaNome, m.is_percussao AS isPercussao,
                 m.is_coro AS isCoro, m.is_violao AS isViolao, m.is_acapella AS isAcapella,
-                i.tom, i.capotraste, ig.nome AS cantorNomeLegado, i.marcador, m.letra
+                i.tom, i.capotraste, ig.nome AS cantorNomeLegado, i.marcador, m.letra,
+                m.chordpro, m.tom_padrao AS tomPadrao
            FROM itens_cerimonia i
            LEFT JOIN musicas m ON m.id = i.musica_id
            LEFT JOIN integrantes ig ON ig.id = i.cantor_id
@@ -215,7 +220,7 @@ export async function getCerimoniaCompleta(
         [id]
       ),
       all<PoolItem>(
-        `SELECT m.nome AS musicaNome, p.tom, m.letra
+        `SELECT m.nome AS musicaNome, p.tom, m.letra, m.chordpro, m.tom_padrao AS tomPadrao
            FROM pool_despacho p
            JOIN musicas m ON m.id = p.musica_id
           WHERE p.cerimonia_id = ?

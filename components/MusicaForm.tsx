@@ -25,6 +25,7 @@ interface Initial {
   is_acapella: number;
   status: string;
   letra: string | null;
+  chordpro: string | null;
   cantor_habitual_id: number | null;
   tom_padrao: string | null;
   observacoes: string | null;
@@ -53,6 +54,7 @@ export default function MusicaForm({
   const [tom, setTom] = useState(initial?.tom_padrao ?? "");
   const [selTemas, setSelTemas] = useState<number[]>(initial?.temas ?? []);
   const [letra, setLetra] = useState(initial?.letra ?? "");
+  const [chordpro, setChordpro] = useState(initial?.chordpro ?? "");
   const [obs, setObs] = useState(initial?.observacoes ?? "");
   const [erro, setErro] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -96,6 +98,7 @@ export default function MusicaForm({
       tom_padrao: tom.trim() || null,
       temas: selTemas,
       letra: letra.trim() || null,
+      chordpro: chordpro.trim() || null,
       observacoes: obs.trim() || null,
     };
     const r = await fetch(
@@ -213,6 +216,23 @@ export default function MusicaForm({
           style={{ minHeight: "260px", fontFamily: "var(--serif)" }}
           value={letra}
           onChange={(e) => setLetra(e.target.value)}
+        />
+      </div>
+
+      <div className="form-row">
+        <label className="lbl">Cifra (ChordPro)</label>
+        <p className="form-help">
+          Acorde entre colchetes antes da sílaba: <code>[Am]Exu abre a [C]porta</code>.
+          Pra progressão sem letra, pode juntar tudo num colchete só —{" "}
+          <code>[Am C G Dm]</code> — ou nem usar colchete, só a linha de acordes direto:{" "}
+          <code>Am C G Dm</code>. Linha em branco separa estrofes. Opcional — a folha
+          usa isso só no modo &quot;Cifra&quot;; sem preencher, mostra a letra normal.
+        </p>
+        <textarea
+          className="textarea"
+          style={{ minHeight: "180px", fontFamily: "var(--serif)" }}
+          value={chordpro}
+          onChange={(e) => setChordpro(e.target.value)}
         />
       </div>
 
