@@ -1,26 +1,39 @@
 /**
  * Copia schema + dados do banco local (data/acervo.db) pro banco remoto
- * (Turso), sem passar pelo init()/seed do app — evita duplicar os dados de
- * seed (instrumentos/temas/locais/integrantes) por cima dos dados reais.
+ * (Turso), sem passar pelo init()/seed do app.
  *
- * Requer TURSO_DATABASE_URL e TURSO_AUTH_TOKEN no ambiente (ex.: em
- * `.env.local`, ou exportadas na shell antes de rodar).
+ * O primeiro acesso do app a um banco Turso novo já roda o init() dele e
+ * semeia instrumentos/temas/locais/integrantes "de fábrica" (SEED_*) — então
+ * o remoto normalmente NÃO está vazio quando você for sincronizar, só não
+ * tem os dados reais ainda. Este script:
+ *   1. Confere que as tabelas de dados reais (tudo fora do seed) estão
+ *      zeradas no remoto — aborta se não estiverem (proteção contra apagar
+ *      dado de produção por engano).
+ *   2. Garante o schema (cria o que faltar; ignora "already exists").
+ *   3. Limpa as tabelas de seed no remoto (senão a cópia bate de frente com
+ *      as UNIQUE constraints dos nomes já semeados) e as demais (por
+ *      simetria — já confirmamos que estão vazias no passo 1).
+ *   4. Copia linha a linha do local pro remoto, preservando os ids (as FKs
+ *      dependem disso).
  *
- * Uso: `npx tsx scripts/sync-to-turso.ts`
+ * Requer TURSO_DATABASE_URL e TURSO_AUTH_TOKEN no ambiente (não precisa
+ * estar em `.env.local` — passe na hora, ex. `TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... npx tsx scripts/sync-to-turso.ts`).
  *
- * Idempotente o suficiente pra dev (roda `CREATE TABLE/INDEX IF NOT EXISTS`),
- * mas foi pensado pra rodar uma vez, contra um banco remoto vazio. Rodar de
- * novo depois de já ter dados no remoto vai duplicar linhas.
+ * Uso: `npm run db:sync-turso`
  */
 import { createClient } from "@libsql/client";
 
-const TABELAS_EM_ORDEM = [
-  "settings",
+const TABELAS_SEED = [
   "instrumentos",
   "locais",
   "integrantes",
   "integrante_instrumentos",
   "temas",
+];
+
+const TABELAS_EM_ORDEM = [
+  "settings",
+  ...TABELAS_SEED,
   "musicas",
   "musica_temas",
   "musica_tons",
@@ -45,6 +58,10 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+function isAlreadyExists(err: unknown): boolean {
+  return String(err instanceof Error ? err.message : err).includes("already exists");
+}
+
 async function main() {
   const url = process.env.TURSO_DATABASE_URL;
   const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -60,9 +77,6 @@ async function main() {
   console.log(`Origem:  file:./data/acervo.db`);
   console.log(`Destino: ${url}\n`);
 
-  // 1) Schema: recria cada tabela/índice no remoto exatamente como está no
-  //    local agora (sqlite_master já reflete colunas adicionadas via
-  //    migrarColunas — não depende do texto original do CREATE TABLE).
   const objetos = await local.execute(
     `SELECT type, name, sql FROM sqlite_master
       WHERE type IN ('table','index') AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%'`
@@ -77,17 +91,57 @@ async function main() {
     else indices.push(sql);
   }
 
+  // 1) Proteção: se o remoto já existe, ele foi tocado pelo init() do app
+  //    (seed de fábrica). Confirma que não há dado REAL lá antes de limpar.
+  const naoSeed = TABELAS_EM_ORDEM.filter(
+    (t) => t !== "settings" && !TABELAS_SEED.includes(t)
+  );
+  for (const tabela of naoSeed) {
+    if (!ddlPorTabela.has(tabela)) continue;
+    let n = 0;
+    try {
+      const rs = await remote.execute(`SELECT COUNT(*) AS n FROM ${tabela}`);
+      n = Number(rs.rows[0][0]);
+    } catch {
+      continue; // tabela não existe no remoto ainda — ok, será criada.
+    }
+    if (n > 0) {
+      throw new Error(
+        `Abortando: "${tabela}" já tem ${n} linha(s) no remoto — não é um banco ` +
+          `"só com seed de fábrica". Sincronizar por cima apagaria dado real.`
+      );
+    }
+  }
+  console.log("Remoto confirmado sem dado real (só seed de fábrica ou vazio).\n");
+
+  // 2) Schema: cria o que faltar (tabelas/índices já existentes são ignorados).
   for (const tabela of TABELAS_EM_ORDEM) {
     const ddl = ddlPorTabela.get(tabela);
     if (!ddl) continue;
-    await remote.execute(ddl);
+    try {
+      await remote.execute(ddl);
+    } catch (err) {
+      if (!isAlreadyExists(err)) throw err;
+    }
   }
   for (const ddl of indices) {
-    await remote.execute(ddl);
+    try {
+      await remote.execute(ddl);
+    } catch (err) {
+      if (!isAlreadyExists(err)) throw err;
+    }
   }
-  console.log(`Schema recriado (${ddlPorTabela.size} tabelas, ${indices.length} índices).\n`);
+  console.log(`Schema garantido (${ddlPorTabela.size} tabelas, ${indices.length} índices).\n`);
 
-  // 2) Dados: copia linha a linha, preservando os ids (FKs dependem disso).
+  // 3) Limpa tudo no remoto (filhas → pais) antes de copiar do local.
+  for (const tabela of [...TABELAS_EM_ORDEM].reverse()) {
+    if (!ddlPorTabela.has(tabela)) continue;
+    await remote.execute(`DELETE FROM ${tabela}`);
+  }
+  await remote.execute("DELETE FROM sqlite_sequence").catch(() => {});
+  console.log("Tabelas do remoto limpas.\n");
+
+  // 4) Copia os dados do local, preservando ids.
   for (const tabela of TABELAS_EM_ORDEM) {
     if (!ddlPorTabela.has(tabela)) continue;
     const rs = await local.execute(`SELECT * FROM ${tabela}`);
