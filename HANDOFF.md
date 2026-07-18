@@ -12,7 +12,8 @@ faseado), `SEED.md` (dados do seed).
 - **Next.js 15 (App Router) + TypeScript**, **React 19**.
 - **libSQL** (`@libsql/client`) com **SQL cru** (SEM Drizzle). Dev = arquivo local
   `data/acervo.db`; produção = Turso (`TURSO_DATABASE_URL` + `TURSO_AUTH_TOKEN`).
-- **CSS puro** (`app/globals.css`), SEM Tailwind. `jszip` p/ ler `.docx`.
+- **CSS puro** (`app/globals.css`), SEM Tailwind. `jszip` p/ ler `.docx`. Uma fonte via
+  `next/font/google` (Zilla Slab, ver seção de design).
 - Porta **6008**. Rodar dev: `npm run dev` (ou via o launch.json do workspace, nome
   `acervo`, em `C:\Workspace\.claude\launch.json` — também existe um `.claude/launch.json`
   local no próprio projeto, equivalente). Reseed/checagem: `npm run db:init`.
@@ -20,20 +21,38 @@ faseado), `SEED.md` (dados do seed).
 - **Auth**: `middleware.ts` faz HTTP Basic Auth, só ativa se `BASIC_AUTH_PASSWORD`
   estiver setado (dev fica liberado). Senha única compartilhada.
 - Padrão espelhado do projeto `C:\Workspace\sad-notes` (mesma stack).
-- **Git**: repositório local inicializado (`git init` + commit inicial `cea9dfc`).
-  `user.name`/`user.email` configurados só localmente neste repo (Leandro Arcebispo /
-  leandro.arcebispo@proton.me). `.gitignore` já cobre `node_modules/`, `.next/`, `.env*`,
-  `data/*.db*`. Ainda sem remote — é só versionamento local por enquanto.
+- **Git/deploy**: repo no GitHub — `github.com/leandro-arcebispo/acervo-cerimonias`,
+  branch `main` (renomeada de `master` pra bater com o default do remote), já com push
+  feito e tudo sincronizado (`git status` limpo, exceto 2 PDFs soltos — ver "Estado atual
+  dos dados"). `README.md` tem o passo a passo de deploy no Vercel + Turso.
+  - **Banco Turso já existe e já foi populado**: `acervo-cerimonias-leandro-arcebispo`
+    (`libsql://acervo-cerimonias-leandro-arcebispo.aws-us-east-1.turso.io`). O primeiro
+    acesso do app rodou o `init()` e semeou os dados de fábrica; depois disso rodei
+    `scripts/sync-to-turso.ts` (ver abaixo) com um token temporário que o usuário gerou só
+    pra essa sincronização (validade de 1 dia, não guardado em lugar nenhum) — copiou as
+    193 músicas/10 cerimônias/13 integrantes reais do `data/acervo.db` local pro remoto.
+    **Local e remoto NÃO ficam sincronizados automaticamente** — são bancos independentes
+    a partir de agora; se o usuário continuar editando local, precisa rodar o script de
+    novo (com um token novo) pra levar as mudanças pro Turso.
+  - **Vercel**: repo pronto pra importar, mas o deploy em si (import do projeto na Vercel +
+    configurar env vars lá) **ainda não foi feito** nesta sessão — só o banco e o GitHub.
+  - `.env.example` documenta as 4 vars (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
+    `BASIC_AUTH_USER`, `BASIC_AUTH_PASSWORD`). Não há `.env.local` neste ambiente — dev
+    local roda 100% no arquivo SQLite.
 - **Cuidado ao rodar `next build`** nesta pasta enquanto o `npm run dev` estiver ativo
   (seu ou de outra sessão): os dois escrevem no mesmo `.next/` e o build de produção
   corrompe o cache do dev server (erro 500 "webpack_modules is not a function"). Se
   acontecer, só reiniciar o `npm run dev`. Prefira validar com `npx tsc --noEmit`.
+  - **Já aconteceu nesta sessão**: subi um 2º `next dev` (porta 6009) pra testar uma
+    migração de schema enquanto a sessão de outra janela tinha o da porta 6008 ativo —
+    corrompeu o `.next/` e deu `ChunkLoadError` na porta 6008. Resolvido matando o processo
+    da 6008 e rodando `npm run dev` de novo. **Evitar 2º dev server na mesma pasta.**
 
 ## Estrutura (arquivos-chave)
 
 ```
 app/
-  layout.tsx            shell (SiteHeader + main)
+  layout.tsx            shell (SiteHeader + main) + next/font/google (Zilla Slab, --font-tom)
   globals.css           design system "hinário" (tokens + componentes + folha/print)
   page.tsx              home (visão geral)
   musicas/ page,nova,[id]   CRUD músicas + busca
@@ -50,10 +69,12 @@ app/
     import/commit     POST commit do import
     montagem/sugestoes  GET sugestões p/ o builder
 components/
-  SiteHeader.tsx (client, nav), TemasManager, IntegrantesManager,
-  MusicaForm, ImportStaging, MontarCerimonia (cria E edita, via props
-  cerimoniaId/initial), FolhaToolbar (client: voltar/editar/fonte/imprimir,
-  envolve o conteúdo da folha e controla --folha-scale)
+  SiteHeader.tsx (client, nav, logo = SVG de flor outline vintage, sem subtítulo fixo),
+  TemasManager, IntegrantesManager, MusicaForm (Salvar/Cancelar voltam pra onde a
+  pessoa veio, ver Convenções), ImportStaging, MontarCerimonia (cria E edita, via props
+  cerimoniaId/initial), FolhaToolbar (client: voltar/editar/fonte/toggle P&B/imprimir,
+  envolve o conteúdo da folha e controla --folha-scale), VoltarButton (client, router.back()
+  com fallback — usado na página de edição de música)
 lib/
   db.ts            cliente libSQL + helpers all/get/run + nowIso + SCHEMA + seed +
                     migrarColunas() (ALTER TABLE idempotente p/ colunas novas, já
@@ -63,11 +84,12 @@ lib/
   types.ts         tipos das entidades
   musicas.ts, temas.ts, integrantes.ts, montagem.ts
   cerimonias.ts    criarCerimonia/atualizarCerimonia (via salvarConteudo compartilhado),
-                   getCerimoniaCompleta (p/ folha), getCerimoniaParaEditar (p/ builder),
-                   removeCerimonia
+                   getCerimoniaCompleta (p/ folha, inclui musicaId nos itens/índice p/ o
+                   atalho de edição), getCerimoniaParaEditar (p/ builder), removeCerimonia
   import-parser.ts extrai+parseia .docx  |  import-service.ts preview+commit
-scripts/ init-db.ts, test-parse.ts
-public/docs/         7 .docx de amostra do grupo
+scripts/ init-db.ts, test-parse.ts, sync-to-turso.ts (copia local → Turso, ver acima)
+public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionados, ver
+                     "Estado atual dos dados")
 ```
 
 ## Convenções (IMPORTANTE seguir)
@@ -76,6 +98,12 @@ public/docs/         7 .docx de amostra do grupo
   de `lib/db.ts`) + rotas `app/api/<entidade>/route.ts` (GET/POST) e `.../[id]/route.ts`
   (PATCH/PUT/DELETE). Componentes cliente `*Manager`/`*Form` dão `fetch` e chamam
   `router.refresh()` após mutação (senão a contagem server no page-head fica stale).
+- **Navegação "voltar pra onde veio"**: em telas que podem ser abertas de mais de um lugar
+  (ex.: editar música, acessível tanto de `/musicas` quanto do atalho na folha da
+  cerimônia), usar `router.back()` (com fallback pra uma rota fixa se não houver
+  histórico) em vez de um `href`/`router.push` fixo. Ver `VoltarButton.tsx` e o
+  `voltarOuLista()` do `MusicaForm.tsx` (Salvar/Cancelar; só ao editar, criar sempre cai
+  na listagem).
 - **libSQL named args**: SQL usa `@campo`, args é objeto `{ campo: valor }` (chaves sem @).
   `null` é válido. Ver exemplos em qualquer lib.
 - **Next 15**: `params` e `searchParams` são `Promise` → `const { id } = await ctx.params`.
@@ -90,14 +118,27 @@ public/docs/         7 .docx de amostra do grupo
   --serif, --sans`, etc.). Reusar classes: `.card .btn .btn-primary .chip .songlist
   .song-row .tom .tag .form .input .select .checks .check .empty .builder .panel`. Sem
   dark mode (look claro deliberado).
+  - **Badge de tom** (`.tom`) usa fonte própria **Zilla Slab 500** (`--font-tom`, via
+    `next/font/google` em `app/layout.tsx`, self-hosted no build — sem chamada externa em
+    runtime), fallback `--sans`. Escolhida entre 5 opções comparadas visualmente
+    (Special Elite, Courier Prime, Zilla Slab, EB Garamond, Vollkorn) — critério era
+    legibilidade no tamanho minúsculo do badge (~36px) acima de qualquer floreio.
+  - **Badge de percussão**: música com tag "Só percussão" (= sem instrumento harmônico)
+    ganha um ícone de atabaque (SVG outline, `stroke="currentColor"`, herda a paleta) antes
+    do quadrado de tom, mesmo tamanho (`.percussao-icone`, box model idêntico ao `.tom`:
+    `height: 1.9em`, `min-width: 36px`). Tags Coro/Violão/Acapella ficam coladas ao lado do
+    tom (`.tom-cluster`), todas numa linha só — não mais dentro do nome da música.
+  - **Logo do header**: SVG outline de flor de 5 pétalas (vintage/botânico), cor
+    `var(--accent)`. Sem subtítulo "Casa de Cura" fixo (removido).
 - **Folha/print** (`globals.css`, seção "Folha da cerimônia"): usa `--folha-scale`
-  (controlado pelo seletor de fonte no `FolhaToolbar`) multiplicando `calc()` em todo
-  font-size da folha. Gotchas de impressão já resolvidos, não regredir:
+  (controlado pelo seletor de fonte no `FolhaToolbar`, **default agora é "Muito grande"**
+  = `1.3`) multiplicando `calc()` em todo font-size da folha. Gotchas de impressão já
+  resolvidos, não regredir:
   - Chrome **não imprime background/cor por padrão** — precisa de
     `print-color-adjust: exact` (já setado globalmente em `@media print`).
   - Cantos arredondados (`border-radius`) com `background` deixam uma **costura branca**
-    no PDF (artefato do motor de impressão) — por isso `.tag`, `.tom`, `.despacho-item`
-    ficam com `border-radius: 0` só em `@media print`.
+    no PDF (artefato do motor de impressão) — por isso `.tag`, `.tom`, `.percussao-icone`,
+    `.despacho-item` ficam com `border-radius: 0` só em `@media print`.
   - **Nunca aplicar quebra de página forçada (`break-after`/`break-before: page`)
     diretamente num elemento que tem uma lista em colunas (`column-count`) como filho
     direto** — o motor de paginação do Chrome bugava (sumiam os `column-rule`, texto
@@ -106,6 +147,14 @@ public/docs/         7 .docx de amostra do grupo
   - Cabeçalho/rodapé (nº de página, data, URL) na impressão é do **navegador**, não da
     página — não dá pra remover via CSS; o usuário desmarca "Cabeçalhos e rodapés" em
     "Mais definições" no diálogo de impressão.
+  - **`.folha` tinha `padding: 0` no `@media print`** → texto sem caixa própria (ex.: o
+    índice) ficava colado na borda da página. Corrigido pra `padding: 0.4rem 0.5rem`
+    (pequeno, mas não-zero) — soma com a margem física da página (`@page { margin: 10mm
+    8mm; }`). Não zerar de novo.
+  - **Versão de impressão preto e branco**: toggle no `FolhaToolbar` aplica a classe
+    `.folha-pb` na folha, que redefine localmente os tokens de cor (`--surface, --ink,
+    --muted, --accent*, --line*, --badge-*, --tag-*`) pra tons de cinza/preto — mesmo
+    layout, só cor. A versão colorida (`.folha` sem a classe) fica intocada.
 
 ## Modelo de dados (SQLite, em `lib/db.ts`)
 
@@ -129,7 +178,7 @@ public/docs/         7 .docx de amostra do grupo
   `musica_id, tom, capotraste, cantor_id (legado), numero` (numeração automática, só conta
   itens `tipo=musica`), `marcador` (despacho guarda texto tipo "1º Despacho", numerado
   automaticamente pela posição entre os despachos).
-- **item_cantores** (NOVA): `item_id, integrante_id` — uma música de um item pode ter
+- **item_cantores**: `item_id, integrante_id` — uma música de um item pode ter
   **múltiplos cantores** (chips clicáveis no builder). `itens_cerimonia.cantor_id` foi
   mantido só como fallback de leitura pra itens antigos que não têm linha aqui.
 - **pool_despacho**: músicas soltas sem numeração (também exibem letra na folha agora).
@@ -138,7 +187,8 @@ public/docs/         7 .docx de amostra do grupo
 
 ## Status por fase
 
-- **Fase 0 — Fundação**: ✅ projeto, schema, seed, auth, deploy-ready, git local.
+- **Fase 0 — Fundação**: ✅ projeto, schema, seed, auth, deploy-ready, **git com remote no
+  GitHub e Turso já criado/populado** (ver "Stack & como rodar").
 - **Fase 1 — CRUD do acervo**: ✅ Músicas (busca na letra via `?q`, tags, tom_padrao),
   Temas, Integrantes. Locais: resolvido virando campo de texto livre na cerimônia (ver
   modelo de dados) em vez de CRUD/FK dedicado.
@@ -156,14 +206,18 @@ public/docs/         7 .docx de amostra do grupo
   auto) / "+ pool" → reordenar/inserir despacho (numerado "1º Despacho"...) / inserir
   quebra de página → cantores por chips (multi-seleção) → numeração automática → salvar
   (POST cria / PUT `/api/cerimonias/[id]` edita, via `criarCerimonia`/`atualizarCerimonia`).
-- **Fase 4 — Gerar folha/PDF**: ✅ `/cerimonias/[id]` mostra a folha completa: cabeçalho,
-  **índice** (nome + número, ordem numérica, 2 colunas, primeira página isolada no print),
-  momentos/despachos numerados, músicas com **letra completa** (também no pool), tags de
-  música, cantor(es)+tom **numa linha abaixo do título** (preview e PDF iguais), layout em
-  **2 colunas** com margens de impressão reduzidas (`@page`). `FolhaToolbar` dá: Voltar,
-  Editar (leva pro builder pré-preenchido), seletor de **tamanho de fonte** (`--folha-scale`),
-  Imprimir/PDF (`window.print()`). Ver gotchas de print acima — já resolvidos, não regredir.
-- **Fase 5 — Cifra/ChordPro + transposição**: ⬜ PRÓXIMA.
+- **Fase 4 — Gerar folha/PDF**: ✅ e com vários refinamentos depois da versão inicial:
+  cabeçalho, **índice** (nome + número, ordem numérica, 2 colunas, primeira página isolada
+  no print, **nome agora é link pra editar a música**), momentos/despachos numerados,
+  músicas com **letra completa** (também no pool), badges de tag reformulados (percussão =
+  ícone de atabaque, coro/violão/acapella colados ao tom, fonte Zilla Slab no tom), nome da
+  música na lista principal **também linka pra editar**, layout em **2 colunas** com
+  margem de impressão pequena mas não-zero, **toggle de versão preto e branco**, fonte
+  default "Muito grande". `FolhaToolbar` dá: Voltar, Editar (leva pro builder
+  pré-preenchido), seletor de tamanho de fonte, toggle P&B, Imprimir/PDF (`window.print()`).
+  Ver gotchas de print acima — já resolvidos, não regredir.
+- **Fase 5 — Cifra/ChordPro + transposição**: ⬜ PRÓXIMA. Planejamento já revisado com o
+  usuário nesta sessão (ver seção abaixo) — nada implementado ainda.
 - **Fase 6 — Áudio (Drive/transcode) + PWA offline**: ⬜.
 
 ## Estado atual dos dados
@@ -172,14 +226,25 @@ public/docs/         7 .docx de amostra do grupo
   via CRUD — ex.: Stéfanie, Vini, Ju Gomes, Leandro). Confirmar via app, não pelo SEED.md.
 - Importadas: Roda de Caboclo, Sete Linhas, Medicinas Sagradas, Cigana, Feminino em Nós,
   Oriental. **Atenção:** há registros de teste na lista de cerimônias
-  (`_TEST_Cerimonia1`, `_TEST_Cerimonia2` e afins, ids ~10-11) criados durante sessões de
-  teste do usuário — confirmar com ele antes de apagar. Também ainda há possível
-  duplicata de "Roda de Caboclo" (2 registros) — mesma cautela.
+  (`_TEST_Cerimonia1`/afins, ids ~10-11) criados durante sessões de teste do usuário — uma
+  delas já apareceu renomeada pra "Casa de vó" numa sessão paralela durante este handoff,
+  confirmando que é só o próprio usuário testando, não bug. Confirmar com ele antes de
+  apagar qualquer uma. Também ainda há possível duplicata de "Roda de Caboclo"
+  (2 registros) — mesma cautela.
+- **2 PDFs não versionados em `public/docs/`**: `Casa-de-vo-17-07-2026_cl.pdf` e
+  `_pb.pdf` — parecem export de teste (provavelmente do toggle P&B novo) feitos numa
+  sessão paralela. Não commitados ainda; `git status` mostra como untracked. Perguntar ao
+  usuário se são pra manter (e onde — `public/docs/` é pras amostras de import, não pra
+  isso) ou descartar, antes de tocar neles.
+- **Turso**: banco de produção já existe e já tem uma cópia dos dados reais (sincronizada
+  manualmente nesta sessão via `scripts/sync-to-turso.ts`) — ver "Stack & como rodar" pros
+  detalhes e a ressalva de que local/remoto não ficam sincronizados automaticamente.
 - **Atenção a múltiplas sessões simultâneas**: o usuário às vezes tem duas sessões de
   chat/terminal abertas apontando pro mesmo dev server (porta 6008). Isso já causou
-  confusão (dados de cerimônia de teste mudando "sozinhos" entre turnos) — não é bug do
-  código, é concorrência real de uso. Sempre que o estado parecer inesperado, considerar
-  essa hipótese antes de procurar bug.
+  confusão (dados de cerimônia de teste mudando "sozinhos" entre turnos, `.next/` corrompido
+  por um 2º dev server) — não é bug do código, é concorrência real de uso. Sempre que o
+  estado parecer inesperado, considerar essa hipótese antes de procurar bug. **Não suba um
+  2º `next dev` nesta pasta** — se precisar testar algo isolado, avise o usuário primeiro.
 
 ## Pendências / refinamentos conhecidos
 
@@ -192,17 +257,30 @@ public/docs/         7 .docx de amostra do grupo
   (ficam sempre desmarcadas até edição manual) — decisão consciente de não mexer no
   parser por ora.
 - Upload de novos `.docx` não existe (import lê de `public/docs`).
-- **Índice + quebra de página no PDF real**: o usuário reportou regressão visual (linhas
-  divisórias sumindo, texto mais escuro) depois de inserir o índice; isolei a quebra de
-  página num elemento próprio separado da lista em colunas (ver gotcha de print acima),
-  mas **ainda não foi confirmado pelo usuário num PDF real gerado depois desse fix** — não
-  há ferramenta de print-to-PDF disponível pra verificar isso a partir do assistente.
-  Confirmar com ele antes de considerar resolvido.
+- **Índice + quebra de página no PDF real**: pendência antiga, ainda não confirmada
+  visualmente pelo usuário num PDF real gerado depois do fix de isolamento da quebra —
+  mas o ajuste de margem de impressão (ver Convenções) pode ter mudado o que ele via.
+  Perguntar antes de considerar resolvido. Não há ferramenta de print-to-PDF disponível
+  pra verificar isso a partir do assistente.
+- **Deploy Vercel**: falta importar o repo no Vercel e configurar as env vars lá (o
+  banco Turso e o GitHub já estão prontos, ver "Stack & como rodar" e o `README.md`).
+- Os 2 PDFs soltos em `public/docs/` (ver "Estado atual dos dados") precisam de decisão.
 
 ## PRÓXIMO — Fase 5: Cifra/ChordPro + transposição
 
-Fase 4 funcionalmente completa, mas com a pendência do índice/quebra de página acima
-ainda não confirmada visualmente pelo usuário num PDF real — perguntar primeiro.
+Planejamento revisado com o usuário nesta sessão (sem código ainda):
 
-Fase 5 (futura): exibir/editar `chordpro` das músicas, transposição por tom na hora de
-montar/imprimir a cerimônia (hoje `tom` é só texto livre por item).
+- **Objetivo**: `musicas.chordpro` (hoje reservado, nunca usado) passa a ser a fonte única
+  de letra+cifra (formato ChordPro, ex. `[Am]Exu abre a [C]porta`), substituindo `letra`
+  como fonte de verdade. As duas variantes da folha (só letra / letra+cifra) passam a ser
+  **geradas** do mesmo campo, em vez de mantidas separadas.
+- **Transposição automática**: hoje `tom` no item da cerimônia é só texto livre, sem
+  ligação com a cifra. A ideia é, ao definir o tom no builder, transpor os acordes do
+  ChordPro automaticamente pro tom escolhido.
+- **Decisões ainda abertas** (não fechadas):
+  - Como migrar as 193 músicas já cadastradas (a maioria só com `letra` texto puro, sem
+    cifra nenhuma) pro formato ChordPro.
+  - Layout da variante "com cifra" na folha impressa (hoje só existe a variante letra
+    simples).
+  - Se/como o parser de import deveria tentar extrair cifra automaticamente dos `.docx`
+    que têm acordes esparsos no meio da letra (ex. "La Llorona").
