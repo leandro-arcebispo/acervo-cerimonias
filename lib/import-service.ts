@@ -115,6 +115,14 @@ function enriquecer(mx: MusicaExtraida, temaIds: number[], m: Mapas): PreviewMus
 
 export async function preview(arquivo: string): Promise<Preview> {
   const buf = await readFile(join(DOCS_DIR, arquivo));
+  return previewFromBuffer(buf, arquivo);
+}
+
+/** Mesma lógica de `preview`, mas a partir de um arquivo em memória (upload). */
+export async function previewFromBuffer(
+  buf: Buffer | ArrayBuffer,
+  arquivo: string
+): Promise<Preview> {
   const c = await parseDocx(buf, arquivo);
   const m = await carregarMapas();
 

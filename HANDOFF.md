@@ -62,10 +62,13 @@ app/
   cerimonias/montar/        builder "Montar Cerimônia" (criar)
   cerimonias/[id]/          folha da cerimônia (detalhe + export/print) <- A FEATURE
   cerimonias/[id]/editar/   builder em modo edição (mesma tela do montar)
-  import/ page,[arquivo]     import de .docx (lista + staging com exclusão de itens)
+  import/ page,[arquivo]     import de .docx (upload direto OU lista de public/docs;
+                             staging com exclusão de itens)
   api/
     musicas, temas, integrantes, instrumentos   (route.ts + [id])
     cerimonias        GET/POST (criar) ; [id] GET-via-lib/PUT (editar)/DELETE
+    import/upload     POST recebe .docx via multipart (FormData), parseia em memória
+                       (sem gravar em disco — necessário p/ Vercel, FS é read-only lá)
     import/commit     POST commit do import
     montagem/sugestoes  GET sugestões p/ o builder
 components/
@@ -193,12 +196,15 @@ public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionad
   Temas, Integrantes. Locais: resolvido virando campo de texto livre na cerimônia (ver
   modelo de dados) em vez de CRUD/FK dedicado.
 - **Fase 2 — Import .docx**: ✅ parser (`import-parser.ts`, validado nos 7 arquivos) +
-  staging (`/import/[arquivo]`, `ImportStaging` — agora com checkbox de excluir item antes
-  de importar, pré-desmarcado pra entradas sem nome) + commit (`import-service.ts`) que
-  cria músicas (dedup por nome_normalizado), cerimônia, temas, integrantes, momentos,
-  itens, pool. Correções recentes no parser: número em branco não "engole" mais o próximo
-  item numerado real; tom no fim sem traço (ex. "REZA REZADOR Gm") é detectado quando tem
-  qualificador (m/7/dim...). Aliases de tema: PG→Pomba Gira, Caboclos→Roda de Caboclo.
+  **upload direto** (`ImportUpload.tsx` → `POST /api/import/upload`, processa o arquivo
+  em memória via `previewFromBuffer`, sem tocar o disco) **e** lista dos arquivos já em
+  `public/docs` (`/import/[arquivo]`) — os dois caminhos convergem pro mesmo
+  `ImportStaging` (checkbox de excluir item antes de importar, pré-desmarcado pra
+  entradas sem nome) + commit (`import-service.ts`) que cria músicas (dedup por
+  nome_normalizado), cerimônia, temas, integrantes, momentos, itens, pool. Correções
+  recentes no parser: número em branco não "engole" mais o próximo item numerado real;
+  tom no fim sem traço (ex. "REZA REZADOR Gm") é detectado quando tem qualificador
+  (m/7/dim...). Aliases de tema: PG→Pomba Gira, Caboclos→Roda de Caboclo.
 - **Fase 3 — Montar Cerimônia**: ✅ `MontarCerimonia` usado tanto em `/cerimonias/montar`
   (criar) quanto `/cerimonias/[id]/editar` (editar, via props `cerimoniaId`+`initial`).
   `lib/montagem.ts` `sugestoesMusicas(temaIds)` retorna tom do histórico ou, se não houver,
@@ -278,7 +284,6 @@ public/docs/         7 .docx de amostra do grupo (+ 2 PDFs soltos não versionad
 - Import parser não detecta as tags Coro/Acapella automaticamente do texto do `.docx`
   (ficam sempre desmarcadas até edição manual) — decisão consciente de não mexer no
   parser por ora.
-- Upload de novos `.docx` não existe (import lê de `public/docs`).
 - **Índice + quebra de página no PDF real**: pendência antiga, ainda não confirmada
   visualmente pelo usuário num PDF real gerado depois do fix de isolamento da quebra —
   mas o ajuste de margem de impressão (ver Convenções) pode ter mudado o que ele via.

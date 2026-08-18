@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { listArquivos } from "@/lib/import-service";
+import { listTemas } from "@/lib/temas";
+import { listIntegrantes } from "@/lib/integrantes";
+import ImportUpload from "@/components/ImportUpload";
 
 export const dynamic = "force-dynamic";
 
 export default async function ImportPage() {
-  const arquivos = await listArquivos();
+  const [arquivos, temas, integrantes] = await Promise.all([
+    listArquivos(),
+    listTemas(),
+    listIntegrantes(),
+  ]);
 
   return (
     <>
@@ -14,9 +21,15 @@ export default async function ImportPage() {
           ← Voltar
         </Link>
       </div>
-      <p className="sub">
-        Arquivos <code>.docx</code> em <code>public/docs</code>. Clique para revisar o
-        que o parser extraiu antes de gravar no acervo.
+
+      <ImportUpload
+        temas={temas.map((t) => ({ id: t.id, nome: t.nome }))}
+        integrantes={integrantes.map((i) => ({ id: i.id, nome: i.nome }))}
+      />
+
+      <p className="sub" style={{ marginTop: "2rem" }}>
+        Ou escolha um dos arquivos <code>.docx</code> já em <code>public/docs</code>.
+        Clique para revisar o que o parser extraiu antes de gravar no acervo.
       </p>
 
       <div className="card">
