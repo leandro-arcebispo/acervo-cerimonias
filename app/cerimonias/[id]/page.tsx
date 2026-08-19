@@ -216,7 +216,16 @@ export default async function CerimoniaDetalhePage({
             {pool.map((p, i) => (
               <li key={i} className="folha-musica-bloco">
                 <div className="folha-musica-topo">
-                  <span className="song-name">{p.musicaNome}</span>
+                  {p.musicaId ? (
+                    <Link
+                      href={`/musicas/${p.musicaId}`}
+                      className="song-name link-musica"
+                    >
+                      {p.musicaNome}
+                    </Link>
+                  ) : (
+                    <span className="song-name">{p.musicaNome}</span>
+                  )}
                 </div>
                 {p.tom && (
                   <div className="folha-musica-meta">

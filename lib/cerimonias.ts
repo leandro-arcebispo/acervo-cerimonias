@@ -158,6 +158,7 @@ export interface IntegranteCerimonia {
 }
 
 export interface PoolItem {
+  musicaId: number;
   musicaNome: string;
   tom: string | null;
   letra: string | null;
@@ -220,7 +221,8 @@ export async function getCerimoniaCompleta(
         [id]
       ),
       all<PoolItem>(
-        `SELECT m.nome AS musicaNome, p.tom, m.letra, m.chordpro, m.tom_padrao AS tomPadrao
+        `SELECT p.musica_id AS musicaId, m.nome AS musicaNome, p.tom, m.letra,
+                m.chordpro, m.tom_padrao AS tomPadrao
            FROM pool_despacho p
            JOIN musicas m ON m.id = p.musica_id
           WHERE p.cerimonia_id = ?
