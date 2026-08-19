@@ -862,8 +862,9 @@ code {
   padding: 0.1rem 0;
   /* Tamanho fixo (não segue --folha-scale): é uma referência rápida, não texto
      pra ler durante a cerimônia — precisa caber numa página mesmo com muitas
-     músicas e independente do tamanho de fonte escolhido pro resto da folha. */
-  font-size: 0.7rem;
+     músicas e independente do tamanho de fonte escolhido pro resto da folha.
+     Calibrado pra caber ~50 músicas (uso típico) em 2 colunas numa página A4. */
+  font-size: 0.85rem;
   break-inside: avoid;
 }
 
@@ -877,7 +878,7 @@ code {
 .folha-indice-item .num {
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 }
 
 .folha-lista {
