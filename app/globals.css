@@ -851,16 +851,19 @@ code {
   list-style: none;
   margin: 0;
   padding: 0;
-  column-count: 2;
-  column-gap: 1.75rem;
+  column-count: 3;
+  column-gap: 1.5rem;
 }
 
 .folha-indice-item {
   display: flex;
   align-items: baseline;
   gap: 0.2rem;
-  padding: 0.2rem 0;
-  font-size: calc(0.9rem * var(--folha-scale));
+  padding: 0.12rem 0;
+  /* Tamanho fixo (não segue --folha-scale): é uma referência rápida, não texto
+     pra ler durante a cerimônia — precisa caber numa página mesmo com muitas
+     músicas e independente do tamanho de fonte escolhido pro resto da folha. */
+  font-size: 0.78rem;
   break-inside: avoid;
 }
 
@@ -874,7 +877,7 @@ code {
 .folha-indice-item .num {
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: calc(0.8rem * var(--folha-scale));
+  font-size: 0.7rem;
 }
 
 .folha-lista {
